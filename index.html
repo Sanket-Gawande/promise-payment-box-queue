@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Payment voice box like queue</title>
+</head>
+<style>
+  * {
+    padding: 0;
+    margin: 0;
+    box-sizing: border-box;
+    font-family:system-ui, -apple-system, Arial, Helvetica, sans-serif;
+  }
+
+  body {
+    background: #ddd;
+    height: 100vh;
+    width: 100vw;
+    display: grid;
+    place-items: center;
+  }
+
+  .container {
+    background: #fff;
+    padding: 1rem;
+    border-radius: .5rem;
+    width: 90%;
+    max-width: 400px;
+  }
+
+  ul {
+    list-style-type: circle;
+    list-style: inside;
+    padding: 1rem 0;
+  }
+
+  button {
+    background: #222;
+    border: none;
+    padding: .5rem 1.5rem;
+    color: white;
+    border-radius: .25rem;
+    margin-bottom: 1rem;
+    cursor: pointer;
+  }
+</style>
+
+<body>
+  <div class="container">
+
+    <h3>Payments in queue</h3>
+    <ul id="queue"></ul>
+    <hr /><br />
+    <p><strong>Total:</strong> ₹<span id="total">00</span> /-</p>
+    <br />
+    <hr /><br />
+    <button onclick="addToQueue()">Pay now</button>
+
+  </div>
+</body>
+<script>
+  let active = false;
+  const list = document.querySelector("#queue");
+  const queuePromises = []
+  async function runQueue() {
+    active = true
+    const res = await Promise.all(queuePromises)
+    speak('Thank You for payment!')
+    active = false
+  }
+
+  function speak(speech) {
+    const utterance = new SpeechSynthesisUtterance(speech);
+    const voices = speechSynthesis.getVoices();
+    // utterance.voice = voices[0];
+    speechSynthesis.speak(utterance);
+    return utterance
+  }
+
+  function speakPromise({ money = 0, payment_id }) {
+    return new Promise((res, rej) => {
+      const utterance = speak(`₹${money} received from the user.`).onend = () => {
+        res();
+        document.querySelector(`#${payment_id}`).style.color = "green";
+        document.querySelector(`#${payment_id}`).style.textDecoration = "line-through";
+        const total = document.querySelector('#total')
+        total.innerText = +total.innerText + money
+      };
+    })
+  }
+
+  async function addToQueue() {
+    const payment_id = Math.random().toString(36).slice(2).replace(/\d/g, '')
+    const money = Math.round(Math.random() * 500)
+    let l = document.createElement('li')
+    l.id = payment_id
+    l.innerText = "₹" + money
+    list.appendChild(l);
+    queuePromises.push(speakPromise({ money, payment_id }))
+    if (!active) runQueue();
+  }
+</script>
+
+</html>
